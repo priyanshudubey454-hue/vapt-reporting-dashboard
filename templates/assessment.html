@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Assessment details · VAPT Dashboard</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body>
+<header class="topbar"><div><p class="eyebrow">Planning and scope</p><h1>Assessment details</h1></div><a href="{{ url_for('index') }}" class="back-link">← Dashboard</a></header>
+<main class="form-main">
+  {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="notice {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
+  <form class="card form-card" method="post"><input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+    <p class="muted">Record written permission and exact authorized targets before entering assessment findings.</p>
+    <div class="form-grid">
+      <label class="wide">Assessment title<input name="title" required maxlength="160" value="{{ assessment.title }}" placeholder="e.g. Internal Web App Lab Review"></label>
+      <label>Organization / lab<input name="organization" maxlength="160" value="{{ assessment.organization }}"></label>
+      <label>Assessor<input name="assessor" maxlength="120" value="{{ assessment.assessor }}"></label>
+      <label class="wide">Authorized scope and exclusions<textarea name="scope" rows="4" required placeholder="List approved hostnames, IPs, applications, and excluded assets.">{{ assessment.scope }}</textarea></label>
+      <label class="wide">Permission / authorization reference<textarea name="authorization" rows="3" required placeholder="Record who authorized the work and where written permission is documented.">{{ assessment.authorization }}</textarea></label>
+      <label>Assessment window<input name="assessment_window" maxlength="160" value="{{ assessment.assessment_window }}" placeholder="Dates and timezone"></label>
+      <label>Methodology<input name="methodology" maxlength="200" value="{{ assessment.methodology }}"></label>
+    </div>
+    <div class="form-actions"><a class="back-link" href="{{ url_for('index') }}">Cancel</a><button type="submit">Save assessment</button></div>
+  </form>
+</main><footer>Keep testing within the documented scope and permission window.</footer>
+</body>
+</html>

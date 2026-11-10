@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.py[cod]
+vapt_dashboard.db
+proxy_scope.json
+proxy-queue/
+server.log
+server-error.log
+.pip-tmp/
+proxy-browser-profile/
+proxy-config/
+proxy-browser-profile-8899/

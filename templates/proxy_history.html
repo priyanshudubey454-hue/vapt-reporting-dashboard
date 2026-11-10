@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Request History · VAPT Workbench</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body>
+<header class="topbar"><div><p class="eyebrow">Captured lab traffic</p><h1>Request history</h1></div><a href="{{ url_for('proxy_setup') }}" class="back-link">Proxy setup</a></header>
+<main>
+  {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="notice {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
+  <section class="card findings">
+    <div class="section-heading"><div><p class="eyebrow">Latest 200 requests</p><h2>Proxy history</h2></div><a class="button secondary" href="{{ url_for('proxy_setup') }}">How to capture traffic</a></div>
+    <form class="filters history-filter" method="get" action="{{ url_for('proxy_history') }}"><label class="search-field">Search host, URL, or method<input type="search" name="q" value="{{ search }}" placeholder="localhost, /login, GET"></label><button type="submit">Search</button><a class="reset-link" href="{{ url_for('proxy_history') }}">Clear</a></form>
+    {% if flows %}<div class="table-wrap"><table><thead><tr><th>Time</th><th>Method</th><th>Host / URL</th><th>Status</th><th>Passive review</th></tr></thead><tbody>
+      {% for flow in flows %}<tr><td>{{ flow.captured_at }}</td><td><span class="method-pill">{{ flow.method }}</span></td><td><a href="{{ url_for('proxy_flow_detail', flow_id=flow.id) }}">{{ flow.url }}</a></td><td>{% if flow.blocked_by_scope %}<span class="scan-label review">Blocked by scope</span>{% elif flow.response_status %}{{ flow.response_status }}{% else %}Pending{% endif %}</td><td>{{ flow.alert_count }} <a href="{{ url_for('proxy_flow_detail', flow_id=flow.id) }}">observations · details</a></td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<div class="empty-state">No requests captured yet. Follow the <a href="{{ url_for('proxy_setup') }}">proxy setup steps</a>, browse a scoped lab in the isolated browser, then refresh this page.</div>{% endif %}
+  </section>
+</main><footer>Request and response bodies are not stored; sensitive header values are redacted.</footer>
+</body>
+</html>

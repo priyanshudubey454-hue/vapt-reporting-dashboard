@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Authorized Lab Scanner · VAPT Dashboard</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body>
+<header class="topbar"><div><p class="eyebrow">Non-invasive checks</p><h1>Authorized lab scanner</h1></div><a href="{{ url_for('index') }}" class="back-link">← Dashboard</a></header>
+<main class="form-main scanner-main">
+  {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="notice {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
+  <section class="card form-card">
+    <h2>Scan one lab web target</h2>
+    <p class="muted">One ordinary GET request checks common response headers, cookie flags, HTTPS redirect behavior, and TLS expiry. No crawling, exploits, brute force, or payloads.</p>
+    <p class="scanner-guard">For safety, target must be <b>localhost</b> or a private lab IP. Add the exact host/IP to Assessment details → authorized scope first. Redirects are not followed.</p>
+    <form method="post" action="{{ url_for('scanner') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+      <label>Lab URL<input name="target" type="url" required placeholder="http://127.0.0.1:5055" value="{{ latest.target if latest else '' }}"></label>
+      <label class="check-label"><input name="authorized" value="yes" type="checkbox" required><span>I own this lab target or have written authorization to assess it.</span></label>
+      <button type="submit">Run safe checks</button>
+    </form>
+  </section>
+  {% if latest %}
+  <section class="card findings scan-results">
+    <div class="section-heading"><div><p class="eyebrow">Scan observations</p><h2>{{ latest.target }}</h2></div><span class="muted">HTTP status {{ latest.http_status }} · {{ latest.checked_at }}</span></div>
+    {% if latest.tls %}<p class="tls-summary">TLS {{ latest.tls.version }} · Certificate expires {{ latest.tls.expires_at[:10] }} ({{ latest.tls.days_until_expiry }} days)</p>{% endif %}
+    <div class="table-wrap"><table><thead><tr><th>Check</th><th>Result</th><th>Observation</th></tr></thead><tbody>
+      {% for item in latest.findings %}<tr><td><strong>{{ item.check }}</strong></td><td><span class="scan-label {{ item.severity }}">{{ item.severity|title }}</span></td><td>{{ item.detail }}</td></tr>{% endfor %}
+    </tbody></table></div>
+    <p class="footnote">A “Review” result is a lead, not a confirmed vulnerability. Check the application context and manually validate before adding it as a finding.</p>
+  </section>
+  {% endif %}
+</main><footer>Only scan systems within your documented authorization and scope.</footer>
+</body>
+</html>

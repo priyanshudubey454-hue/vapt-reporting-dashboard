@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Proxy Setup · VAPT Workbench</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body>
+<header class="topbar"><div><p class="eyebrow">Isolated lab traffic</p><h1>Proxy setup</h1></div><a href="{{ url_for('index') }}" class="back-link">← Dashboard</a></header>
+<main class="form-main proxy-main">
+  {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="notice {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
+  <section class="card form-card"><p class="muted">This proxy captures request/response metadata from one dedicated Edge profile and stores it in the dashboard history.</p>
+    <ol class="setup-steps">
+      <li><b>Set the authorized scope.</b> Open <a href="{{ url_for('assessment_settings') }}">Assessment details</a> and include the exact lab IP or <code>localhost</code> in scope, plus your permission note. Only localhost/private IPv4 hosts listed there are allowed.</li>
+      <li><b>Start the proxy.</b> Install mitmproxy from its official Windows installer, then double-click <code>start_proxy.bat</code>. Keep its window open. The proxy listens only on this computer at <code>127.0.0.1:8899</code>.</li>
+      <li><b>Open the isolated browser.</b> Double-click <code>open_lab_browser.bat</code> and enter your authorized lab URL. It launches Edge with a separate profile and routes only that profile through the proxy. The browser's loopback bypass is disabled so localhost lab traffic reaches the proxy; the addon still blocks hosts outside the private scope list.</li>
+      <li><b>See requests.</b> Browse the lab in that new Edge window, then return here and open <a href="{{ url_for('proxy_history') }}">Request history</a>.</li>
+    </ol>
+    <section class="browser-launch">
+      <h2>Open the lab browser</h2>
+      <p class="muted">Start the proxy first. This opens a separate Edge window routed through it. The target must be in your saved authorized scope.</p>
+      <form method="post" action="{{ url_for('proxy_setup') }}" class="browser-launch-form"><input type="hidden" name="_csrf_token" value="{{ csrf_token }}"><label>Authorized HTTP lab URL<input name="target" type="url" required value="http://127.0.0.1:5055" placeholder="http://127.0.0.1:5055"></label><button type="submit">Open isolated browser</button></form>
+    </section>
+    <div class="scanner-guard"><b>HTTPS note:</b> decrypting HTTPS requires the browser to trust mitmproxy's CA. This launcher isolates proxy settings, but Edge's certificate trust is not isolated to that profile. This starter workflow is for HTTP lab targets; do not install the CA in Windows' trust store or click through certificate warnings. The CA key is kept in an ignored local project folder.</div>
+    <h2>What gets recorded</h2><p>Method, host, URL, response status, header names/values (sensitive values redacted), transfer sizes, and passive review observations. Request and response bodies are not saved.</p>
+    <h2>What this version does not do</h2><p>It does not pause/edit/replay requests, crawl pages, send exploit payloads, or test public websites. Out-of-scope hosts are blocked. A passive “Review” observation must be verified before you add it as a vulnerability.</p>
+    <p class="source-note">Official setup references: <a href="https://docs.mitmproxy.org/stable/overview/installation/" target="_blank" rel="noreferrer">Windows installation</a> · <a href="https://docs.mitmproxy.org/stable/concepts/certificates/" target="_blank" rel="noreferrer">Certificate setup</a></p>
+  </section>
+</main><footer>Use only with written authorization and a dedicated lab browser profile.</footer>
+</body>
+</html>

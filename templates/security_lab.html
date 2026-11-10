@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>SQLi and IDOR Practice Lab · VAPT Workbench</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body>
+<header class="topbar"><div><p class="eyebrow">Authorized lab checks</p><h1>SQLi / IDOR Practice Lab</h1></div><a href="{{ url_for('index') }}" class="back-link">← Dashboard</a></header>
+<main class="form-main scanner-main">
+  {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="notice {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
+  {% if results %}
+  <section class="card findings scan-results live-results">
+    <p class="eyebrow">{{ 'Authorized lab result' if results[0].get('result_class') else 'Simulated results' }}</p><h2>{{ 'Check outcome' if results[0].get('result_class') else 'Practice check outcome' }}</h2>
+    <div class="table-wrap"><table><thead><tr><th>Test</th><th>Outcome</th><th>Example evidence</th><th>How to fix</th></tr></thead><tbody>
+      {% for item in results %}<tr><td><strong>{{ item.name }}</strong></td><td><span class="scan-label {{ item.result_class if item.result_class else ('review' if item.outcome.startswith('FAIL') else 'pass') }}">{{ item.outcome }}</span></td><td>{{ item.evidence }}</td><td>{{ item.fix }}</td></tr>{% endfor %}
+    </tbody></table></div>
+    <p class="footnote">Live checks are narrow signals and need manual review; a result from one endpoint does not prove the rest of the application is secure. Simulator records are fictional and labeled as training data.</p>
+    <p><a class="button secondary" href="{{ url_for('index') }}">View findings and report</a></p>
+  </section>
+  {% endif %}
+  <section class="card form-card live-lab">
+    <p class="eyebrow">Juice Shop live checks</p><h2>Test your own local Juice Shop instance</h2>
+    <p class="muted">The target must be a private lab IP already listed in Assessment details. These checks make one read-only SQL error probe or basket reads only. They do not crawl, extract database records, change baskets, or save credentials, tokens, or response bodies.</p>
+    <div class="scanner-guard"><b>Use throwaway Juice Shop accounts only.</b> For IDOR, create two different accounts and add one product to the basket owned by Account B. The app logs into both accounts temporarily to compare access; the passwords and tokens are discarded after the check.</div>
+    <form method="post" action="{{ url_for('juice_shop_checks') }}" class="live-test-form">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+      <label class="wide">Juice Shop base URL<input name="target" type="url" required value="{{ target }}" placeholder="http://192.168.56.101:3000"></label>
+      <label class="check-label wide"><input name="authorized" value="yes" type="checkbox" required><span>This is my own Juice Shop lab or I have written permission to test it.</span></label>
+      <div class="live-test-actions"><button name="test_type" value="sqli" type="submit">Run safe SQL input check</button></div>
+    </form>
+    <form method="post" action="{{ url_for('juice_shop_checks') }}" class="live-test-form">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+      <label class="wide">Juice Shop base URL<input name="target" type="url" required value="{{ target }}" placeholder="http://192.168.56.101:3000"></label>
+      <label class="check-label wide"><input name="authorized" value="yes" type="checkbox" required><span>This is my own Juice Shop lab or I have written permission to test it.</span></label>
+      <div class="form-grid">
+        <label>Account A — testing access<input name="owner_email" type="email" required autocomplete="off" placeholder="test-a@example.invalid"></label>
+        <label>Account A password<input name="owner_password" type="password" required autocomplete="new-password"></label>
+        <label>Account B — owns basket<input name="other_email" type="email" required autocomplete="off" placeholder="test-b@example.invalid"></label>
+        <label>Account B password<input name="other_password" type="password" required autocomplete="new-password"></label>
+      </div>
+      <div class="live-test-actions"><button name="test_type" value="idor" type="submit">Run read-only IDOR check</button></div>
+    </form>
+  </section>
+  <section class="card form-card">
+    <h2>Built-in practice simulator</h2>
+    <p class="muted">Use this when Juice Shop is not running. It only simulates fictional results inside this dashboard.</p>
+    <div class="practice-grid">
+      <article><h3>SQL injection (SQLi)</h3><p>A vulnerable search may mix typed input into a database command. Use parameterized queries so search text stays data.</p><p><b>Expected safe behavior:</b> crafted search text returns no unrelated records.</p></article>
+      <article><h3>IDOR / BOLA</h3><p>An API must check whether the signed-in user owns or may access each requested object.</p><p><b>Expected safe behavior:</b> another user's private record is denied (for example, HTTP 403).</p></article>
+    </div>
+    <form method="post" class="practice-actions"><input type="hidden" name="_csrf_token" value="{{ csrf_token }}"><button name="mode" value="vulnerable" type="submit">Simulate vulnerable example</button><button class="button secondary" name="mode" value="fixed" type="submit">Run fixed version retest</button></form>
+  </section>
+</main><footer>Use real security tests only against systems you own or are authorized to assess.</footer>
+</body>
+</html>

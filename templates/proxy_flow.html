@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Request details · VAPT Workbench</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body>
+<header class="topbar"><div><p class="eyebrow">Captured request</p><h1>{{ flow.method }} · {{ flow.host }}</h1></div><a href="{{ url_for('proxy_history') }}" class="back-link">← Request history</a></header>
+<main>
+  <section class="card findings flow-summary"><p><b>URL:</b> {{ flow.url }}</p><p><b>Captured:</b> {{ flow.captured_at }} · <b>Status:</b> {% if flow.blocked_by_scope %}Blocked by scope policy{% else %}{{ flow.response_status or 'Pending / no response' }}{% endif %}</p><p><b>Transfer sizes:</b> request {{ flow.request_size }} bytes · response {{ flow.response_size }} bytes</p><p class="footnote">Bodies are not stored. Sensitive headers such as Cookie and Authorization are redacted.</p></section>
+  {% if flow.alerts %}<section class="card findings"><p class="eyebrow">Passive observations</p><h2>Review these manually</h2><div class="table-wrap"><table><thead><tr><th>Check</th><th>Result</th><th>Observation</th><th>Recommendation</th></tr></thead><tbody>{% for alert in flow.alerts %}<tr><td><strong>{{ alert.check }}</strong></td><td><span class="scan-label review">{{ alert.severity }}</span></td><td>{{ alert.detail }}</td><td>{{ alert.recommendation }}</td></tr>{% endfor %}</tbody></table></div><p class="footnote">These observations are leads, not confirmed vulnerabilities. Validate them before recording a finding.</p></section>{% endif %}
+  <section class="card findings"><h2>Request headers</h2>{% if flow.request_headers %}<div class="table-wrap"><table><thead><tr><th>Header</th><th>Value</th></tr></thead><tbody>{% for name,value in flow.request_headers %}<tr><td><code>{{ name }}</code></td><td class="header-value">{{ value }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="muted">No request headers recorded.</p>{% endif %}</section>
+  <section class="card findings"><h2>Response headers</h2>{% if flow.response_headers %}<div class="table-wrap"><table><thead><tr><th>Header</th><th>Value</th></tr></thead><tbody>{% for name,value in flow.response_headers %}<tr><td><code>{{ name }}</code></td><td class="header-value">{{ value }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="muted">No response headers recorded yet.</p>{% endif %}</section>
+</main><footer>Only use captured flows from your authorized lab scope.</footer>
+</body>
+</html>

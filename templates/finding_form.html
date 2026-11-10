@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ page_title }} · VAPT Dashboard</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body>
+<header class="topbar"><div><p class="eyebrow">Assessment record</p><h1>{{ page_title }}</h1></div><a href="{{ url_for('index') }}" class="back-link">← Dashboard</a></header>
+<main class="form-main">
+  {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="notice {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
+  <form class="card form-card" method="post"><input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+    <p class="muted">Severity is calculated automatically from the CVSS score (CVSS v3.x bands).</p>
+    <div class="form-grid">
+      <label class="wide">Finding title<input name="title" required maxlength="160" value="{{ finding.title if finding else '' }}" placeholder="e.g. Missing Content-Security-Policy"></label>
+      <label>Asset / URL<input name="asset" required maxlength="240" value="{{ finding.asset if finding else '' }}" placeholder="e.g. lab.example.local"></label>
+      <label>CVSS score<input name="cvss" type="number" min="0" max="10" step="0.1" required value="{{ finding.cvss if finding else '' }}" placeholder="0.0–10.0"><small>0 = Informational · 9.0–10 = Critical</small></label>
+      <label>Status<select name="status">{% for item in statuses %}<option value="{{ item }}" {% if finding and finding.status == item %}selected{% elif not finding and item == 'Open' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
+      <label class="wide">Description<textarea name="description" rows="4" required placeholder="What did you observe? Describe the affected behavior and impact.">{{ finding.description if finding else '' }}</textarea></label>
+      <label class="wide">Evidence notes<textarea name="evidence" rows="3" placeholder="Record safe evidence details, request IDs, or screenshot filenames. Do not paste passwords or secrets.">{{ finding.evidence if finding else '' }}</textarea></label>
+      <label class="wide">Remediation recommendation<textarea name="recommendation" rows="3" required placeholder="What change should the system owner make?">{{ finding.recommendation if finding else '' }}</textarea></label>
+      <label class="wide">Retest notes<textarea name="retest_notes" rows="3" placeholder="After remediation, record what you retested and the result.">{{ finding.retest_notes if finding else '' }}</textarea></label>
+    </div>
+    <div class="form-actions"><a class="back-link" href="{{ url_for('index') }}">Cancel</a><button type="submit">{{ 'Save changes' if finding else 'Save finding' }}</button></div>
+  </form>
+</main><footer>Only record findings from authorized assessments.</footer>
+</body>
+</html>
