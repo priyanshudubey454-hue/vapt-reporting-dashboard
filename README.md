@@ -73,6 +73,12 @@ Use **Download PDF** for the assessment report. The app does not calculate CVSS 
 
 The demo records button is safe to click again; it will not add duplicate sample entries. The scanner and proxy still require the target to be in the saved scope.
 
+## Deploy a read-only portfolio demo on Render
+
+This project also supports a restricted online showcase. Connect the GitHub repository as a Render **Web Service**, leave Root Directory blank, use `pip install -r requirements.txt` as the build command, and use `gunicorn app:app --bind 0.0.0.0:$PORT` as the start command. Set `PUBLIC_DEMO_MODE` to `true` in Environment Variables. In this mode, the app loads fictional demo findings, permits viewing the dashboard and downloading its PDF, and blocks all writes, scanner checks, Juice Shop checks, and proxy routes. Keep real lab testing on your own computer. The free service uses temporary storage, so any online data is recreated from the sample records after a restart; do not use it to store assessment results.
+
+The local learning mode remains the default when `PUBLIC_DEMO_MODE` is unset or false.
+
 For the SQLi/IDOR part, choose **SQLi / IDOR lab**. Add the Juice Shop private IP to scope first. The SQL input check sends one read-only search request with a quote/semicolon and only looks for database error signatures; it does not retrieve data. The IDOR check logs into two throwaway Juice Shop accounts, compares one basket as its owner and as the other user, and saves only status/item-count evidence. It does not change baskets. Credentials, tokens, and response bodies are not stored. A positive is a candidate that must be reviewed; no result covers other endpoints. **Simulate vulnerable example** remains available as a clearly labeled training simulator if no live lab is running.
 
 ## Safety and limitations

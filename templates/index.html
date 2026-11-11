@@ -5,18 +5,19 @@
   <title>{{ project_name }}</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-<header class="topbar"><div><p class="eyebrow">Authorized assessment workspace</p><h1>{{ project_name }}</h1></div><span class="badge">Local learning project</span></header>
+<header class="topbar"><div><p class="eyebrow">Authorized assessment workspace</p><h1>{{ project_name }}</h1></div><span class="badge">{% if public_demo %}Read-only online demo{% else %}Local learning project{% endif %}</span></header>
 <main>
+  {% if public_demo %}<div class="notice success">Public portfolio demo: all records are fictional training examples. Scanning, proxying, and editing are disabled here.</div>{% endif %}
   <section class="welcome card">
     <div><p class="eyebrow">{{ assessment.title }}</p><h2>{{ assessment.organization or 'Assessment overview' }}</h2><p class="muted">Scope: {{ assessment.scope or 'Set the authorized scope before recording findings.' }}</p></div>
-    <div class="actions"><a class="button secondary" href="{{ url_for('assessment_settings') }}">Assessment details</a><a class="button secondary" href="{{ url_for('proxy_setup') }}">Proxy setup / open browser</a><a class="button secondary" href="{{ url_for('proxy_history') }}">Request history</a><a class="button secondary" href="{{ url_for('scanner') }}">Lab scanner</a><a class="button secondary" href="{{ url_for('security_lab') }}">SQLi / IDOR lab</a><a class="button" href="{{ url_for('new_vulnerability') }}">+ Add finding</a><a class="button report-button" href="{{ url_for('download_report') }}">Download PDF</a></div>
+    <div class="actions">{% if not public_demo %}<a class="button secondary" href="{{ url_for('assessment_settings') }}">Assessment details</a><a class="button secondary" href="{{ url_for('proxy_setup') }}">Proxy setup / open browser</a><a class="button secondary" href="{{ url_for('proxy_history') }}">Request history</a><a class="button secondary" href="{{ url_for('scanner') }}">Lab scanner</a><a class="button secondary" href="{{ url_for('security_lab') }}">SQLi / IDOR lab</a><a class="button" href="{{ url_for('new_vulnerability') }}">+ Add finding</a>{% endif %}<a class="button report-button" href="{{ url_for('download_report') }}">Download PDF</a></div>
   </section>
   {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="notice {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
-  <section class="card demo-guide">
+  {% if not public_demo %}<section class="card demo-guide">
     <div><p class="eyebrow">Video walkthrough</p><h2>Run the full local demo</h2><p class="muted">Prepare the assessment, scan this dashboard, show captured traffic, and export the report.</p></div>
     <ol><li>Set only your authorized lab IP in Assessment details.</li><li>Run the basic Lab scanner and show Request history.</li><li>Use SQLi / IDOR lab for narrow Juice Shop checks or the simulator.</li><li>Review candidate findings and remediation advice.</li><li>Retest and download the PDF report.</li></ol>
     <div class="demo-actions"><form method="post" action="{{ url_for('load_demo_data') }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token }}"><button class="button secondary" type="submit">Load video demo records</button></form><span class="footnote">Sample records are fictional and clearly labeled; they are not scan-confirmed vulnerabilities.</span></div>
-  </section>
+  </section>{% endif %}
   <section class="stats" aria-label="Vulnerability statistics">
     <article class="card stat"><span>Total findings</span><strong>{{ stats.total }}</strong><small>{{ stats.open }} open · {{ stats.in_progress }} in progress</small></article>
     <article class="card stat"><span>Critical</span><strong class="critical-text">{{ stats.critical }}</strong><small>CVSS 9.0–10.0</small></article>
@@ -32,17 +33,17 @@
       <label>Status<select name="status"><option value="">All statuses</option>{% for status in statuses %}<option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>{% endfor %}</select></label>
       <button type="submit">Filter</button><a class="reset-link" href="{{ url_for('index') }}">Clear</a>
     </form>
-    {% if findings %}<div class="table-wrap"><table><thead><tr><th>Finding</th><th>Asset</th><th>Severity / CVSS</th><th>Remediation</th><th>Actions</th></tr></thead><tbody>
+    {% if findings %}<div class="table-wrap"><table><thead><tr><th>Finding</th><th>Asset</th><th>Severity / CVSS</th><th>Remediation</th>{% if not public_demo %}<th>Actions</th>{% endif %}</tr></thead><tbody>
       {% for finding in findings %}<tr>
         <td><strong>{{ finding.title }}</strong><div class="subtext">{{ finding.description }}</div>{% if finding.evidence %}<details><summary>Evidence notes</summary><p>{{ finding.evidence }}</p></details>{% endif %}</td>
         <td>{{ finding.asset }}</td>
         <td><span class="severity {{ finding.severity|lower }}">{{ finding.severity }}</span><div class="subtext">CVSS {{ "%.1f"|format(finding.cvss) }}</div></td>
-        <td><form class="status-form" method="post" action="{{ url_for('update_status', finding_id=finding.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token }}"><select name="status" aria-label="Status for {{ finding.title }}">{% for status in statuses %}<option value="{{ status }}" {% if finding.status == status %}selected{% endif %}>{{ status }}</option>{% endfor %}</select><button class="small-button" type="submit">Update</button></form></td>
-        <td><a href="{{ url_for('edit_vulnerability', finding_id=finding.id) }}">Edit</a></td>
+        <td>{% if public_demo %}{{ finding.status }}{% else %}<form class="status-form" method="post" action="{{ url_for('update_status', finding_id=finding.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token }}"><select name="status" aria-label="Status for {{ finding.title }}">{% for status in statuses %}<option value="{{ status }}" {% if finding.status == status %}selected{% endif %}>{{ status }}</option>{% endfor %}</select><button class="small-button" type="submit">Update</button></form>{% endif %}</td>
+        {% if not public_demo %}<td><a href="{{ url_for('edit_vulnerability', finding_id=finding.id) }}">Edit</a></td>{% endif %}
       </tr>{% endfor %}
     </tbody></table></div>{% else %}<div class="empty-state">No matching findings. Add an authorized lab finding or clear your filters.</div>{% endif %}
   </section>
-  <p class="footnote">Record evidence without secrets or personal data. Use only for assessments you own or are authorized to perform.</p>
-</main><footer>VAPT Reporting Dashboard · Local development app</footer>
+  {% if not public_demo %}<p class="footnote">Record evidence without secrets or personal data. Use only for assessments you own or are authorized to perform.</p>{% endif %}
+</main><footer>VAPT Reporting Dashboard · {% if public_demo %}Read-only portfolio demo{% else %}Local development app{% endif %}</footer>
 </body>
 </html>

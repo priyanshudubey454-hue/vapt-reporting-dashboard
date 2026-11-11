@@ -21,7 +21,8 @@ from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_ope
 from flask import Flask, abort, flash, redirect, render_template, request, send_file, session, url_for
 
 app = Flask(__name__)
-app.secret_key = "local-learning-key-change-before-deployment"
+app.secret_key = os.environ.get("SECRET_KEY", token_urlsafe(32))
+PUBLIC_DEMO_MODE = os.environ.get("PUBLIC_DEMO_MODE", "").strip().lower() in {"1", "true", "yes"}
 BASE_DIR = Path(__file__).resolve().parent
 DATABASE = BASE_DIR / "vapt_dashboard.db"
 PROXY_SCOPE_FILE = BASE_DIR / "proxy_scope.json"
@@ -348,6 +349,15 @@ def run_safe_web_scan(target):
 
 @app.before_request
 def protect_post_requests():
+    if PUBLIC_DEMO_MODE:
+        if request.method not in {"GET", "HEAD", "OPTIONS"}:
+            abort(403, description="This hosted demo is read-only.")
+        if not (
+            request.path == "/"
+            or request.path == "/report.pdf"
+            or request.path.startswith("/static/")
+        ):
+            abort(404)
     token = session.setdefault("_csrf_token", token_urlsafe(32))
     if request.method == "POST":
         submitted = request.form.get("_csrf_token", "")
@@ -357,7 +367,7 @@ def protect_post_requests():
 
 @app.context_processor
 def inject_template_values():
-    return {"csrf_token": session.get("_csrf_token", "")}
+    return {"csrf_token": session.get("_csrf_token", ""), "public_demo": PUBLIC_DEMO_MODE}
 
 
 @app.route("/")
@@ -396,6 +406,12 @@ def index():
 @app.route("/demo-data", methods=["POST"])
 def load_demo_data():
     """Add clearly labeled fictional findings for a guided screen-recording demo."""
+    ensure_demo_records()
+    flash("Clearly labeled demo records are ready. They are fictional examples, not confirmed findings.", "success")
+    return redirect(url_for("index"))
+
+
+def ensure_demo_records():
     samples = [
         (
             "DEMO ONLY — Missing browser security headers", "127.0.0.1:5055", "Medium", 5.3, "Open",
@@ -423,8 +439,6 @@ def load_demo_data():
                 db.execute("""INSERT INTO vulnerabilities
                     (title, asset, severity, cvss, status, description, recommendation, evidence, retest_notes)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", sample)
-    flash("Clearly labeled demo records are ready. They are fictional examples, not confirmed findings.", "success")
-    return redirect(url_for("index"))
 
 
 @app.route("/scanner", methods=["GET", "POST"])
@@ -940,7 +954,10 @@ def download_report():
 
 
 init_db()
-sync_proxy_scope()
+if PUBLIC_DEMO_MODE:
+    ensure_demo_records()
+else:
+    sync_proxy_scope()
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5055, debug=True)
